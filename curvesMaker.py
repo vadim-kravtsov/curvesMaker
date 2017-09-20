@@ -49,7 +49,7 @@ def cat_reader(cat, field, filt, date):
 	for line in cat:
 		objX, objY = line[1], line[2]
 		objFlux, objFluxErr = line[5], line[6]
-		#find_obj(objX, objY, cat)
+		find_obj(objX, objY, cat)
 
 def main():
 	dataBase = objects_definer(fields_definer()) 
