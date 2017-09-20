@@ -16,6 +16,16 @@ def fields_definer():
 		fields[field] = {}
 	return fields
 
+def show_database():
+	dataBase =  objects_definer(fields_definer())
+	for field in dataBase:
+		print field
+		for stars in dataBase[field]:
+			print '----->' + stars
+
+def find_obj():
+	pass
+
 def zeros_appender(val):
 	if val<10:
 		strVal = '00' + str(int(val))
@@ -32,14 +42,14 @@ def objects_definer(fields):
 		for xy in objXY:
 			strCoords = zeros_appender(xy[0])+zeros_appender(xy[1])
 			fields[field][strCoords] = {}
-			fields[field][strCoords]['coords'] = [xy[0],xy[1]]			
+			fields[field][strCoords]['coords'] = [int(xy[0]),int(xy[1])]			
 	return fields
 
-def cat_reader(cat, filt, date):
+def cat_reader(cat, field, filt, date):
 	for line in cat:
 		objX, objY = line[1], line[2]
 		objFlux, objFluxErr = line[5], line[6]
-		
+		#find_obj(objX, objY, cat)
 
 def main():
 	dataBase = objects_definer(fields_definer()) 
@@ -57,7 +67,8 @@ def main():
 						catPath = os.path.join(pathToCats, fileName)
 						filt = fileName[0]
 						cat = genfromtxt(catPath)
-						cat_reader(cat, filt, date)
+						cat_reader(cat, field, filt, date)
 
 
 #main()
+show_database()
