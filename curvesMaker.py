@@ -30,7 +30,6 @@ def find_obj(objX, objY, field, filt ):
 		dist = np.hypot(stX - objX, stY - objY)																														 
 		if dist<4:																		
 			return st
-
 	return False
 
 
