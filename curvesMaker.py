@@ -12,13 +12,15 @@ workDir = '/home/anonymouse/COURSWORK/Stars/3_COURSE/PROJECT/WORKDIR'
 refDir  = '/home/anonymouse/COURSWORK/Stars/3_COURSE/curvesMaker/references'
 darkBiasDir = '/home/anonymouse/COURSWORK/Stars/3_COURSE/PROJECT/WORKDIR/dark+bias'
 
-#def fields_definer():
-#	fields = {}
-#	fieldsList = os.listdir(refDir)
-#	for field in fieldsList:
-#		fields[field] = {}
-#	return fields
-#
+dataBase = {}
+
+def fields_definer():
+	global dataBase
+	fieldsList = os.listdir(refDir)
+	for field in fieldsList:
+		dataBase[field] = {}
+	return fields
+
 #def show_database():
 #	dataBase =  objects_definer(fields_definer())
 #	for field in dataBase:
@@ -53,6 +55,13 @@ darkBiasDir = '/home/anonymouse/COURSWORK/Stars/3_COURSE/PROJECT/WORKDIR/dark+bi
 #		if dist<4:																		
 #			return st
 #	return False
+
+#class Star(object):
+#	"""docstring for Star"""
+#	def __init__(self, objX, objY, objMag, objMagErr):
+#		self.name = str(int(objX))+str(int(objY))
+#		self.x = objX
+#		self.y = objY
 
 def match_standarts(cat, refCat):
 	"""
@@ -112,7 +121,7 @@ def curvesMaker(cat, refCat, field, filt, date):
 				fixJDtoMJD.format = 'jd'
 				julianDate.format = 'jd' 
 				julianDate = julianDate - fixJDtoMJD
-				print objMag
+				print objMag, objMagErr, str(int(objX))+str(int(objY))
 				
 
 def main():
