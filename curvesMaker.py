@@ -12,14 +12,6 @@ workDir = '/home/anonymouse/COURSWORK/Stars/3_COURSE/PROJECT/WORKDIR'
 refDir  = '/home/anonymouse/COURSWORK/Stars/3_COURSE/curvesMaker/references'
 darkBiasDir = '/home/anonymouse/COURSWORK/Stars/3_COURSE/PROJECT/WORKDIR/dark+bias'
 
-dataBase = {}
-
-def fields_definer():
-	global dataBase
-	fieldsList = os.listdir(refDir)
-	for field in fieldsList:
-		dataBase[field] = {}
-	return fields
 
 #def show_database():
 #	dataBase =  objects_definer(fields_definer())
@@ -28,14 +20,6 @@ def fields_definer():
 #		for stars in dataBase[field]:
 #			print '----->' + stars
 
-#def zeros_appender(val):
-#	if val<10:
-#		strVal = '00' + str(int(val))
-#	elif val<100 and val>10:
-#		strVal = '0' + str(int(val))
-#	else:
-#		strVal = str(int(val))
-#	return strVal
 #
 #def objects_definer(fields):
 #	for field in fields.keys():
@@ -63,6 +47,33 @@ def fields_definer():
 #		self.x = objX
 #		self.y = objY
 
+dataBase = {}
+
+def zeros_appender(val):
+	if val<10:
+		strVal = '00' + str(int(val))
+	elif val<100 and val>10:
+		strVal = '0' + str(int(val))
+	else:
+		strVal = str(int(val))
+	return strVal
+
+def fields_definer():
+	global dataBase
+	fieldsList = os.listdir(refDir)
+	for field in fieldsList:
+		dataBase[field] = {}
+
+def search_in_database(objX, objY, field):
+	global dataBase
+	for objName in dataBase[field]:
+		x, y = int(objName[:3]), int(objName[3:])
+		dist = np.hypot(x - objX, y - objY)																														 
+		if dist<4:																		
+			return objName
+	return False
+
+	
 def match_standarts(cat, refCat):
 	"""
 	Функция отождествляет объект и звезды сравнения.
@@ -108,6 +119,7 @@ def find_m0(cat, refCat, filt):
 	return m0
 
 def curvesMaker(cat, refCat, field, filt, date):
+	global dataBase
 	m0 = find_m0(cat, refCat, filt)
 	if m0:
 		for line in cat:
@@ -121,7 +133,21 @@ def curvesMaker(cat, refCat, field, filt, date):
 				fixJDtoMJD.format = 'jd'
 				julianDate.format = 'jd' 
 				julianDate = julianDate - fixJDtoMJD
-				print objMag, objMagErr, str(int(objX))+str(int(objY))
+				match_obj = search_in_database(objX, objY, field)
+				if match_obj:
+					if date in dataBase[field][match_obj]:
+						dataBase[field][match_obj][date][filt+'Mag'] = [objMag, objMagErr]
+					else:
+						dataBase[field][match_obj][date] = {}
+						dataBase[field][match_obj][date][filt+'Mag'] = [objMag, objMagErr]
+				else:
+					objName = zeros_appender(objX)+zeros_appender(objY)
+					dataBase[field][objName] = {}
+					dataBase[field][objName][date] = {}
+					dataBase[field][objName][date][filt+'Mag'] = [objMag, objMagErr]
+				
+
+
 				
 
 def main():
@@ -145,5 +171,7 @@ def main():
 						curvesMaker(cat, refCat, field, filt, date)
 
 #dataBase = objects_definer(fields_definer()) 
+fields_definer()
 main()
+print dataBase
 #show_database()
