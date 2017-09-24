@@ -5,13 +5,14 @@ import os
 import numpy as np
 from math import log10
 import astropy
+import pickle
 from astropy import time
 
 dataDir = '/home/anonymouse/COURSWORK/Stars/3_COURSE/PROJECT/DATA'
 workDir = '/home/anonymouse/COURSWORK/Stars/3_COURSE/PROJECT/WORKDIR'
 refDir  = '/home/anonymouse/COURSWORK/Stars/3_COURSE/curvesMaker/references'
 darkBiasDir = '/home/anonymouse/COURSWORK/Stars/3_COURSE/PROJECT/WORKDIR/dark+bias'
-
+outFile = open('dataBase.dat', 'w')
 
 #def show_database():
 #	dataBase =  objects_definer(fields_definer())
@@ -126,8 +127,8 @@ def curvesMaker(cat, refCat, field, filt, date):
 			objX, objY = line[0], line[1]
 			objFlux, objFluxErr = line[2], line[3]
 			if objFlux>objFluxErr and objFlux>0:
-				objMag = -2.5*log10(objFlux)+m0
-				objMagErr = -2.5*log10(objFlux- objFluxErr)+m0-objMag
+				objMag = round(-2.5*log10(objFlux)+m0, 2)
+				objMagErr = round(-2.5*log10(objFlux- objFluxErr)+m0-objMag, 2)
 				julianDate = astropy.time.Time(date[:4]+'-'+date[4:6]+'-'+date[6:])
 				fixJDtoMJD = astropy.time.Time('1858-11-17')
 				fixJDtoMJD.format = 'jd'
@@ -173,5 +174,6 @@ def main():
 #dataBase = objects_definer(fields_definer()) 
 fields_definer()
 main()
-print dataBase
+pickle.dump(dataBase, outFile)
+#print dataBase
 #show_database()
