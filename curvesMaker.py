@@ -14,40 +14,6 @@ refDir  = '/home/anonymouse/COURSWORK/Stars/3_COURSE/curvesMaker/references'
 darkBiasDir = '/home/anonymouse/COURSWORK/Stars/3_COURSE/PROJECT/WORKDIR/dark+bias'
 outFile = open('dataBase.dat', 'w')
 
-#def show_database():
-#	dataBase =  objects_definer(fields_definer())
-#	for field in dataBase:
-#		print field
-#		for stars in dataBase[field]:
-#			print '----->' + stars
-
-#
-#def objects_definer(fields):
-#	for field in fields.keys():
-#		catPath = os.path.join(refDir, field, 'i.cat')
-#		objXY = np.genfromtxt(catPath, usecols = [1,2])
-#		for xy in objXY:
-#			strCoords = zeros_appender(xy[0])+zeros_appender(xy[1])
-#			fields[field][strCoords] = {}
-#			#fields[field][strCoords]['coords'] = [int(xy[0]),int(xy[1])]			
-#	return fields
-
-#def find_obj(objX, objY, field, filt ):
-#	global dataBase
-#	for st in dataBase[field]:
-#		stX, stY = st[:3], st[3:]
-#		dist = np.hypot(stX - objX, stY - objY)																														 
-#		if dist<4:																		
-#			return st
-#	return False
-
-#class Star(object):
-#	"""docstring for Star"""
-#	def __init__(self, objX, objY, objMag, objMagErr):
-#		self.name = str(int(objX))+str(int(objY))
-#		self.x = objX
-#		self.y = objY
-
 dataBase = {}
 
 def zeros_appender(val):
@@ -61,7 +27,7 @@ def zeros_appender(val):
 
 def fields_definer():
 	global dataBase
-	fieldsList = os.listdir(refDir)
+	fieldsList = os.listdir(dataDir)
 	for field in fieldsList:
 		dataBase[field] = {}
 
@@ -147,10 +113,6 @@ def curvesMaker(cat, refCat, field, filt, date):
 					dataBase[field][objName][date] = {}
 					dataBase[field][objName][date][filt+'Mag'] = [objMag, objMagErr]
 				
-
-
-				
-
 def main():
 	#dataBase = objects_definer(fields_definer()) 
 	fields = os.listdir(dataDir)
