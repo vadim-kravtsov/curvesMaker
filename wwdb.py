@@ -1,5 +1,6 @@
 import astropy
 import pickle
+import os
 import numpy as np
 from astropy import time
 from collections import OrderedDict
@@ -8,22 +9,26 @@ from matplotlib.mlab import stineman_interp
 
 dbFile = open('dataBase.dat', 'rb')
 dataBase = pickle.load(dbFile)
-#for field in dataBase:
-#	print field
-#	for stars in dataBase[field]:
-#		print '---->'+stars
-#		for date in dataBase[field][stars]:
-#			print '-------->'+date
-#			for mag in dataBase[field][stars][date]:
-#				print '---------------->'+str(dataBase[field][stars][date])
-#				break
-def separator(field = 's50716', mode = 'map', numbOfObs = 30, lb = 2, rb = 5):
+
+def print_database():
+	for field in dataBase:
+		print field
+		for stars in dataBase[field]:
+			print '---->'+stars
+			for date in dataBase[field][stars]:
+				print '-------->'+date
+				for mag in dataBase[field][stars][date]:
+					print '---------------->'+str(dataBase[field][stars][date])
+					break
+
+def separator(mode = 'map', numbOfObs = 30, lb = 2, rb = 5):
 	global dataBase
 	bestStars = []
 	outStars = []
-	for star in dataBase[field]:
-		if len(list(set(dataBase[field][star])))>numbOfObs:
-			bestStars.append([field, star])
+	for field in dataBase:
+		for star in dataBase[field]:
+			if len(list(set(dataBase[field][star])))>numbOfObs:
+				bestStars.append([field, star])
 	if mode == 'map':
 		x = []
 		y = []
@@ -43,6 +48,7 @@ def separator(field = 's50716', mode = 'map', numbOfObs = 30, lb = 2, rb = 5):
 				minMag = min(listOfMag)
 				deltaMag = maxMag - minMag
 				if lb<deltaMag<rb:
+					print deltaMag
 					outStars.append([field, star])
 		return outStars
 
@@ -85,6 +91,7 @@ def plot_curve(field, star):
 	rD, rM = prepare_filter(field, star, 'rMag')
 	iD, iM = prepare_filter(field, star, 'iMag')
 	dataList = [[bD, bM],[vD, vM],[rD, rM],[iD, iM]]
+	plt.rcParams["figure.figsize"] = [16,9]
 	fig, ax = plt.subplots()
 	plt.ylabel('Magnitude, m')
 	plt.xlabel('JD')
@@ -94,21 +101,17 @@ def plot_curve(field, star):
 		for filt in 'bvri':
 			if dates:
 				ax.plot(dates, mags, 'o', label = filt)
-	handles, labels = plt.gca().get_legend_handles_labels()
-	by_label = OrderedDict(zip(labels, handles))
-	plt.legend(by_label.values(), by_label.keys())
+	#handles, labels = plt.gca().get_legend_handles_labels()
+	#by_label = OrderedDict(zip(labels, handles))
+	#plt.legend(by_label.values(), by_label.keys())
 	plt.savefig('outGraph/'+field+'_'+star+'.svg')
 	
-	#
-	#ax.plot((min(x), max(x)), (xMed, xMed), 'k-', markersize = 1)
-	#plt.ylim((max(mags)+1, min(mags)-1))
-	#plt.xlim(min(x)-10, max(x)+10)
-	#
-	#
 
-bestStars = separator(mode = 'curve')
+bestStars = separator(mode = 'curve', numbOfObs = 30, lb = 0, rb =10 )
+os.system('rm -r outGraph/*')
 print bestStars
 for obj in bestStars:
 	plot_curve(obj[0], obj[1])
+
 #plot_curve('bllac', '152172')
 #separator(mode='curve')
