@@ -48,7 +48,7 @@ def separator(mode = 'map', numbOfObs = 30, lb = 2, rb = 5):
 				minMag = min(listOfMag)
 				deltaMag = maxMag - minMag
 				if lb<deltaMag<rb:
-					print deltaMag
+					#print deltaMag
 					outStars.append([field, star])
 		return outStars
 
@@ -86,17 +86,28 @@ def prepare_filter(field, star, filt):
 		return None, None
 
 def plot_curve(field, star):
+	print "Please wait, i'm plot curve for "+field+' '+star
 	bD, bM = prepare_filter(field, star, 'bMag')
 	vD, vM = prepare_filter(field, star, 'vMag')
 	rD, rM = prepare_filter(field, star, 'rMag')
 	iD, iM = prepare_filter(field, star, 'iMag')
 	dataList = [[bD, bM],[vD, vM],[rD, rM],[iD, iM]]
-	plt.rcParams["figure.figsize"] = [16,9]
+	#plt.rcParams["figure.figsize"] = [16,9]
 	fig, ax = plt.subplots()
 	plt.ylabel('Magnitude, m')
 	plt.xlabel('JD')
 	plt.title('Light curve for '+field+'_'+star)
 	plt.grid(True)
+	yMin, yMax = 30 ,0
+	for filt in dataList:
+		if filt[1]:
+			maxVal = max(filt[1])
+			minVal = min(filt[1])
+			if minVal < yMin:
+				yMin = minVal
+			if maxVal > yMax:
+				yMax = maxVal
+	plt.ylim(yMax+1, yMin-1)
 	for dates, mags in dataList:
 		for filt in 'bvri':
 			if dates:
@@ -105,13 +116,13 @@ def plot_curve(field, star):
 	#by_label = OrderedDict(zip(labels, handles))
 	#plt.legend(by_label.values(), by_label.keys())
 	plt.savefig('outGraph/'+field+'_'+star+'.svg')
-	
+	#plt.show()
 
-bestStars = separator(mode = 'curve', numbOfObs = 30, lb = 0, rb =10 )
+bestStars = separator(mode = 'curve', numbOfObs = 10, lb = 0, rb =10 )
 os.system('rm -r outGraph/*')
 print bestStars
 for obj in bestStars:
 	plot_curve(obj[0], obj[1])
 
-#plot_curve('bllac', '152172')
+#plot_curve('s50716', '142158')
 #separator(mode='curve')
