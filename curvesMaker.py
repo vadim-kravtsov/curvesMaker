@@ -4,6 +4,7 @@
 import os
 import numpy as np
 from math import log10
+import alipylocal as alipy
 import astropy
 import pickle
 from astropy import time
@@ -17,14 +18,24 @@ outFile = open('dataBase.dat', 'w')
 dataBase = {}
 
 def zeros_appender(val):
-	if val<10:
-		strVal = '00' + str(int(val))
-	elif val<100 and val>10:
-		strVal = '0' + str(int(val))
-	else:
-		strVal = str(int(val))
-	return strVal
-
+	if val > 0:
+		if val<10:
+			strVal = '+00' + str(int(val))
+		elif val<100 and val>10:
+			strVal = '+0' + str(int(val))
+		else:
+			strVal = '+'+str(int(val))
+		return strVal
+	if val < 0:
+		val = abs(val)
+		if val<10:
+			strVal = '-00' + str(int(val))
+		elif val<100 and val>10:
+			strVal = '-0' + str(int(val))
+		else:
+			strVal = '-'+str(int(val))
+		return strVal
+		
 def fields_definer():
 	global dataBase
 	fieldsList = os.listdir(dataDir)
@@ -34,14 +45,14 @@ def fields_definer():
 def search_in_database(objX, objY, field):
 	global dataBase
 	for objName in dataBase[field]:
-		x, y = int(objName[:3]), int(objName[3:])
+		x, y = int(objName[:4]), int(objName[4:])
+		#print x, y
 		dist = np.hypot(x - objX, y - objY)																														 
 		if dist<4:																		
 			return objName
 	return False
 
-	
-def match_standarts(cat, refCat):
+#def match_standarts(cat, refCat):
 	"""
 	Функция отождествляет объект и звезды сравнения.
 	Она обходит все строки каталога cat, и находит объекты с наиболее
@@ -65,7 +76,7 @@ def match_standarts(cat, refCat):
 			minDistIndex.append(-1)
 	return minDistIndex	
 
-def find_m0(cat, refCat, filt):
+#def find_m0(cat, refCat, filt):
 	minDistIndex = match_standarts(cat, refCat)
 	resultCat = []
 	for i in minDistIndex:
@@ -85,34 +96,47 @@ def find_m0(cat, refCat, filt):
 	m0 = np.mean(listOfM0)
 	return m0
 
-def curvesMaker(cat, refCat, field, filt, date):
+def curvesMaker(m0, pathToCat, fieldData):
 	global dataBase
-	m0 = find_m0(cat, refCat, filt)
-	if m0:
-		for line in cat:
-			objX, objY = line[0], line[1]
-			objFlux, objFluxErr = line[2], line[3]
-			if objFlux>objFluxErr and objFlux>0:
-				objMag = round(-2.5*log10(objFlux)+m0, 2)
-				objMagErr = round(-2.5*log10(objFlux- objFluxErr)+m0-objMag, 2)
-				julianDate = astropy.time.Time(date[:4]+'-'+date[4:6]+'-'+date[6:])
-				fixJDtoMJD = astropy.time.Time('1858-11-17')
-				fixJDtoMJD.format = 'jd'
-				julianDate.format = 'jd' 
-				julianDate = julianDate - fixJDtoMJD
-				match_obj = search_in_database(objX, objY, field)
-				if match_obj:
-					if date in dataBase[field][match_obj]:
-						dataBase[field][match_obj][date][filt+'Mag'] = [objMag, objMagErr]
-					else:
-						dataBase[field][match_obj][date] = {}
-						dataBase[field][match_obj][date][filt+'Mag'] = [objMag, objMagErr]
+	field, filt, date = fieldData 
+	cat = open(pathToCat, 'r')
+	for line in cat:
+		if len(line.split()) == 4:
+			objX, objY, objFlux, objFluxErr = map(float, line.split())
+			strX, strY = map(zeros_appender, [objX, objY])
+		if objFlux>objFluxErr and objFlux>0:
+			objMag = round(-2.5*log10(objFlux)+m0, 2)
+			objMagErr = round(-2.5*log10(objFlux- objFluxErr)+m0-objMag, 2)
+			julianDate = astropy.time.Time(date[:4]+'-'+date[4:6]+'-'+date[6:])
+			fixJDtoMJD = astropy.time.Time('1858-11-17')
+			fixJDtoMJD.format = 'jd'
+			julianDate.format = 'jd' 
+			julianDate = julianDate - fixJDtoMJD
+			match_obj = search_in_database(objX, objY, field)
+			if match_obj:
+				if date in dataBase[field][match_obj]:
+					dataBase[field][match_obj][date][filt+'Mag'] = [objMag, objMagErr]
 				else:
-					objName = zeros_appender(objX)+zeros_appender(objY)
-					dataBase[field][objName] = {}
-					dataBase[field][objName][date] = {}
-					dataBase[field][objName][date][filt+'Mag'] = [objMag, objMagErr]
+					dataBase[field][match_obj][date] = {}
+					dataBase[field][match_obj][date][filt+'Mag'] = [objMag, objMagErr]
+			else:
+				objName = zeros_appender(objX)+zeros_appender(objY)
+				dataBase[field][objName] = {}
+				dataBase[field][objName][date] = {}
+				dataBase[field][objName][date][filt+'Mag'] = [objMag, objMagErr]
 				
+def matrix_transform(m0, outCatPath, catPath, matrixFormPath, fieldData):
+	print 'Wait, i am working with '+ str(fieldData)
+	cat = np.genfromtxt(catPath,  usecols = [1,2,5,6])
+	outCat = open(outCatPath, 'w')
+	invFile = open(matrixFormPath, 'rb')
+	inv = pickle.load(invFile).inverse()
+	for line in cat:
+		oldcord = (line[0], line[1])
+		newCoord = inv.apply(oldcord)
+		outCat.write('%.2f  %.2f  %.2f  %.2f\n' % (float(newCoord[0]), float(newCoord[1]), line[2], line[3]))
+		curvesMaker(m0, outCatPath, fieldData)
+
 def main():
 	#dataBase = objects_definer(fields_definer()) 
 	fields = os.listdir(dataDir)
@@ -123,15 +147,26 @@ def main():
 			dateList = os.listdir(pathToField)
 			for date in dateList:
 				pathToCats = os.path.join(pathToField, date, 'cats')
-				catsList = os.listdir(pathToCats)
-				for fileName in catsList:
-					if fileName in ['i.cat','b.cat','v.cat','r.cat']:
-						catPath = os.path.join(pathToCats, fileName)
-						refCatPath = os.path.join(refDir, field, 'coords.dat')
-						cat = np.genfromtxt(catPath,  usecols = [1,2,5,6])
-						refCat = np.genfromtxt(refCatPath, usecols = [1,2,3,4,5,6])
-						filt = fileName[0]
-						curvesMaker(cat, refCat, field, filt, date)
+				if 'cats' in os.listdir(os.path.join(pathToField, date)):
+					catsList = os.listdir(pathToCats)
+					for fileName in catsList:
+						if fileName[1:] == 'NoRotated.cat':
+							filt = fileName[0]
+							outCatPath = os.path.join(pathToCats, filt+'OUT.cat')
+							catPath = os.path.join(pathToCats, fileName)
+							matrixFormPath = os.path.join(pathToField, date, 'matrixform_'+filt)
+							if os.path.exists(matrixFormPath):
+								fieldData = [field, filt, date]
+								try:
+									m0 = float(open(pathToCats+'/'+filt+'res.dat', 'r').read())
+									matrix_transform(m0, outCatPath, catPath, matrixFormPath, fieldData)
+								except ValueError:
+									print 'ValueError for '+str(fieldData)
+								#catPath = os.path.join(pathToCats, fileName)
+							#refCatPath = os.path.join(refDir, field, 'coords.dat')
+							#cat = np.genfromtxt(catPath,  usecols = [1,2,5,6])
+							#refCat = np.genfromtxt(refCatPath, usecols = [1,2,3,4,5,6])
+							#curvesMaker(cat, refCat, field, filt, date)
 
 #dataBase = objects_definer(fields_definer()) 
 fields_definer()
