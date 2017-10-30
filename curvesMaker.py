@@ -97,10 +97,11 @@ def search_in_database(objX, objY, field):
 	return m0
 
 def curvesMaker(m0, pathToCat, fieldData):
-	global dataBase
 	field, filt, date = fieldData 
-	cat = open(pathToCat, 'r')
+	#print '---- Wait, i am work with dataBase for %s'%field
+	cat = open(pathToCat)
 	for line in cat:
+		print 'OKOKOK'
 		if len(line.split()) == 4:
 			objX, objY, objFlux, objFluxErr = map(float, line.split())
 			strX, strY = map(zeros_appender, [objX, objY])
@@ -113,18 +114,24 @@ def curvesMaker(m0, pathToCat, fieldData):
 			julianDate.format = 'jd' 
 			julianDate = julianDate - fixJDtoMJD
 			match_obj = search_in_database(objX, objY, field)
+			if field == 'S50716':
+				print 'ok'
+			#print '--->Search %s in dataBase...'%(match_obj)
 			if match_obj:
+				#print '------>Match succefull!'
 				if date in dataBase[field][match_obj]:
 					dataBase[field][match_obj][date][filt+'Mag'] = [objMag, objMagErr]
 				else:
 					dataBase[field][match_obj][date] = {}
 					dataBase[field][match_obj][date][filt+'Mag'] = [objMag, objMagErr]
 			else:
+				#'------>Match false - add object in dataBase!'
 				objName = zeros_appender(objX)+zeros_appender(objY)
 				dataBase[field][objName] = {}
 				dataBase[field][objName][date] = {}
 				dataBase[field][objName][date][filt+'Mag'] = [objMag, objMagErr]
-				
+	cat.close()
+
 def matrix_transform(m0, outCatPath, catPath, matrixFormPath, fieldData):
 	print 'Wait, i am working with '+ str(fieldData)
 	cat = np.genfromtxt(catPath,  usecols = [1,2,5,6])
@@ -135,7 +142,10 @@ def matrix_transform(m0, outCatPath, catPath, matrixFormPath, fieldData):
 		oldcord = (line[0], line[1])
 		newCoord = inv.apply(oldcord)
 		outCat.write('%.2f  %.2f  %.2f  %.2f\n' % (float(newCoord[0]), float(newCoord[1]), line[2], line[3]))
-		curvesMaker(m0, outCatPath, fieldData)
+	outCat.close()
+	invFile.close()
+
+	curvesMaker(m0, outCatPath, fieldData)
 
 def main():
 	#dataBase = objects_definer(fields_definer()) 
