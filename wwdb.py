@@ -162,6 +162,7 @@ os.system('rm -r outGraph/*')
 print len(bestStars)
 data = dataBase['cicam']['+166+127']
 plot_curve('cicam', '+166+127')
+
 #for i in xrange(0,len(bestStars), 2):
 #	field = bestStars[0][0]
 #	star1 = bestStars[i][1]
