@@ -94,6 +94,7 @@ def plot_curve(field, star):
 	iD, iM = prepare_filter(field, star, 'iMag')
 	rD, rM = prepare_filter(field, star, 'rMag')
 	dataList = [[bD, bM],[vD, vM],[rD, rM],[iD, iM]]
+	dataList = [[iD, iM]]
 	plt.rcParams["figure.figsize"] = [16,9]
 	fig, ax = plt.subplots()
 	plt.ylabel('Magnitude, m')
@@ -117,11 +118,14 @@ def plot_curve(field, star):
 			ax.plot(dates, mags, 'o', label = filts[i])
 		i+=1
 	handles, labels = plt.gca().get_legend_handles_labels()
+	vlarDate = np.genfromtxt('CICAMI.DAT', usecols = [0])
+	vlarMags = np.genfromtxt('CICAMI.DAT', usecols = [1])
+	ax.plot(vlarDate[len(vlarDate)-len(dates):], vlarMags[len(vlarMags)-len(mags):], 'o')
 	by_label = OrderedDict(zip(labels, handles))
 	plt.legend(by_label.values(), by_label.keys())
 	plt.savefig('outGraph/'+field+'_'+star+'.svg')
 	plt.close()
-	#plt.show()
+	plt.show()
 
 def plot_correlation(field, stars):
 	print "Please wait, i'm plot correlation  "+field+' '+stars[0]+' '+stars[1]
@@ -156,14 +160,16 @@ def plot_correlation(field, stars):
 bestStars = separator(fields = ['bllac'],mode = 'curve', numbOfObs = 250, lb = 0, rb = 50 )
 os.system('rm -r outGraph/*')
 print len(bestStars)
+data = dataBase['cicam']['+166+127']
+plot_curve('cicam', '+166+127')
 #for i in xrange(0,len(bestStars), 2):
 #	field = bestStars[0][0]
 #	star1 = bestStars[i][1]
 #	star2 = bestStars[i+1][1]
 #	stars = [star1, star2]
 #	plot_correlation(field, stars)
-for obj in bestStars:
-	plot_curve(obj[0], obj[1])
+#for obj in bestStars:
+#	plot_curve(obj[0], obj[1])
 #print_database()
 #plot_curve('s50716', '+301+112')
 #separator(mode='curve')
