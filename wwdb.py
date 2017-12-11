@@ -110,7 +110,7 @@ def plot_curve(field, star):
 				yMin = minVal
 			if maxVal > yMax:
 				yMax = maxVal
-	plt.ylim(yMax+1, yMin-1)
+	plt.ylim(14.0, 12.3)
 	filts = 'bvri'
 	i = 0 
 	for dates, mags in dataList:
@@ -118,8 +118,8 @@ def plot_curve(field, star):
 			ax.plot(dates, mags, 'o', label = filts[i])
 		i+=1
 	handles, labels = plt.gca().get_legend_handles_labels()
-	vlarDate = np.genfromtxt('CICAMI.DAT', usecols = [0])
-	vlarMags = np.genfromtxt('CICAMI.DAT', usecols = [1])
+	vlarDate = np.genfromtxt('4U0115I.DAT', usecols = [0])
+	vlarMags = np.genfromtxt('4U0115I.DAT', usecols = [1])
 	ax.plot(vlarDate[len(vlarDate)-len(dates):], vlarMags[len(vlarMags)-len(mags):], 'o')
 	by_label = OrderedDict(zip(labels, handles))
 	plt.legend(by_label.values(), by_label.keys())
@@ -160,8 +160,8 @@ def plot_correlation(field, stars):
 bestStars = separator(fields = ['bllac'],mode = 'curve', numbOfObs = 250, lb = 0, rb = 50 )
 os.system('rm -r outGraph/*')
 print len(bestStars)
-data = dataBase['cicam']['+166+127']
-plot_curve('cicam', '+166+127')
+#data = dataBase['cicam']['+166+127']
+plot_curve('4u0115', '+263+137')
 
 #for i in xrange(0,len(bestStars), 2):
 #	field = bestStars[0][0]
