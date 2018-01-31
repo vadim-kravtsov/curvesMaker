@@ -4,15 +4,15 @@
 import os
 import numpy as np
 from math import log10
-import alipylocal as alipy
+import sys
+sys.path.append(os.path.join(os.getcwd(), "lib"))
+import lib.alipylocal as alipy
 import astropy
 import pickle
 from astropy import time
 
-dataDir = '/home/anonymouse/COURSWORK/Stars/3_COURSE/PROJECT/DATA'
-workDir = '/home/anonymouse/COURSWORK/Stars/3_COURSE/PROJECT/WORKDIR'
-refDir  = '/home/anonymouse/COURSWORK/Stars/3_COURSE/curvesMaker/references'
-darkBiasDir = '/home/anonymouse/COURSWORK/Stars/3_COURSE/PROJECT/WORKDIR/dark+bias'
+dataDir = '/home/anonymouse/COURSWORK/Stars/aperPhot/data'
+#refDir  = '/home/anonymouse/COURSWORK/Stars/3_COURSE/curvesMaker/references'
 outFile = open('dataBase.dat', 'w')
 
 dataBase = {}
@@ -101,7 +101,6 @@ def curvesMaker(m0, pathToCat, fieldData):
 	#print '---- Wait, i am work with dataBase for %s'%field
 	cat = open(pathToCat)
 	for line in cat:
-		print 'OKOKOK'
 		if len(line.split()) == 4:
 			objX, objY, objFlux, objFluxErr = map(float, line.split())
 			strX, strY = map(zeros_appender, [objX, objY])
