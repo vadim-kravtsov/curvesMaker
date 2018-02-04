@@ -1,7 +1,10 @@
 #! /usr/bin/env python
 
 import sys
-from GUI import MainApplication
+from os import path, getcwd
+sys.path.append(path.join(getcwd(), "lib"))
+from lib.GUI import MainApplication
+from lib.settings import *
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
