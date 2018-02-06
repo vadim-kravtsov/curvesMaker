@@ -3,6 +3,7 @@
 from os import path
 from glob import glob
 from settings import *
+from wwdb import plot_curve
 
 import pickle
 import tkinter as tk
@@ -33,7 +34,9 @@ class MainApplication(tk.Frame):
         self.menu = MenuBar(self)
         self.fPlot = FieldPlot(self)
         self.controls = ControlPanel(self)
+        self.load_database(dataBasePath)
         self.root.mainloop()
+
 
 
     def load_database(self, pathToDatabase):
@@ -41,8 +44,9 @@ class MainApplication(tk.Frame):
         self.controls.set_listbox(self.database)
 
 
-    def load_image(self, pathToImage):
+    def load_image(self, pathToImage, fieldName):
         self.fieldImageName = pathToImage
+        self.fieldName = fieldName
         self.fieldImage = fits.getdata(pathToImage)
         self.imageSizeY, self.imageSizeX = self.fieldImage.shape
         self.fieldCenterX = self.imageSizeX / 2  # Let's suppose for now that the field image is centered
@@ -55,8 +59,8 @@ class MainApplication(tk.Frame):
         self.controls.cutsMaxScale.config(to=self.imageFluxMedian+8*self.imageFluxStd)
         self.controls.cutsMaxScale.config(state="normal")
         self.controls.cutsMin.set(self.imageFluxMedian)
-        self.controls.cutsMax.set(self.imageFluxMedian+8*self.imageFluxStd)
-        self.fPlot.plot_field_image()
+        self.controls.cutsMax.set(self.imageFluxMedian+8*np.abs(self.imageFluxStd))
+        self.fPlot.plot_field_image(self.fieldName)
 
     def on_closing(self):
         self.root.destroy()
@@ -67,14 +71,8 @@ class MenuBar(tk.Frame):
     def __init__(self, window):
         self.window = window
         self.menubar = tk.Menu(window.root)
-        self.menubar.add_command(label="Open image", command=self.select_image)
         self.menubar.add_command(label="Open database", command=self.select_database)
         self.window.root.config(menu=self.menubar)
-
-
-    def select_image(self):
-        pathToImage = filedialog.askopenfilename(title="Choose fits file")
-        self.window.load_image(pathToImage)
 
     def select_database(self):
         pathToImage = filedialog.askopenfilename(title="Choose database file")
@@ -97,18 +95,19 @@ class FieldPlot(tk.Frame):
         self.figure.axes.get_yaxis().set_visible(False)
         # Plot instances
         self.dataPlotInstance = None
-        self.circlePlotInstance = None
+        self.titleInstance = None
         
         # Connect onclick event
         self.cid = self.canvas.mpl_connect('button_press_event', self.onclick)
 
 
-    def plot_field_image(self):
+    def plot_field_image(self, fieldName):
         self.clear_field_plot()
         self.dataPlotInstance = self.figure.imshow(self.window.fieldImage, vmin=self.window.controls.cutsMin.get(),
                                                    vmax=self.window.controls.cutsMax.get(), cmap="gray", interpolation="nearest",
                                                    aspect="equal", origin="lower")
 
+        self.titleInstance = self.mainPlot.legend(title = fieldName, loc = 9)
         self.canvas.show()
 
 
@@ -116,12 +115,19 @@ class FieldPlot(tk.Frame):
         if self.dataPlotInstance is not None:
             self.dataPlotInstance.remove()
             self.dataPlotInstance = None
+            self.titleInstance.remove()
+            self.titleInstance = None
 
             
     def onclick(self, event):
         xdata = event.xdata
         ydata = event.ydata
         print(xdata, ydata)
+        self.make_curve(self.window.fieldName, xdata, ydata)
+
+    def make_curve(self, fieldName, x, y):
+        starName = '+'+str(int(x))+'+'+str(int(y))
+        plot_curve(self.window.database, fieldName, starName)
 
 
 class ControlPanel(tk.Frame):
@@ -136,7 +142,7 @@ class ControlPanel(tk.Frame):
         self.cutsMinScale = tk.Scale(self.panel, from_=0, to=1, orient=tk.HORIZONTAL,
                                     showvalue = False, variable=self.cutsMin, state="disabled")
         self.cutsMinScale.grid(column=1, row=0)
-        self.cutsMin.trace("w", lambda *args: self.window.fPlot.plot_field_image())
+        self.cutsMin.trace("w", lambda *args: self.window.fPlot.plot_field_image(self.window.fieldName))
 
         # Upper cuts value scale
         tk.Label(self.panel, text="Upper cuts: ").grid(column=0, row=1, sticky="e")
@@ -145,13 +151,14 @@ class ControlPanel(tk.Frame):
         self.cutsMaxScale = tk.Scale(self.panel, from_=0, to=1, orient=tk.HORIZONTAL,
                                      showvalue = False,  variable=self.cutsMax, state="disabled")
         self.cutsMaxScale.grid(column=1, row=1)
-        self.cutsMax.trace("w", lambda *args: self.window.fPlot.plot_field_image())
+        self.cutsMax.trace("w", lambda *args: self.window.fPlot.plot_field_image(self.window.fieldName))
 
 
         # Messages
         self.messagesLabelValue = tk.StringVar()
         self.messagesLabelValue.set("")
-        tk.Label(self.panel, textvariable=self.messagesLabelValue).grid(column=0, row=2, sticky = "e")
+        tk.Label(self.panel, textvariable=self.messagesLabelValue).grid(column=0, columnspan = 2, row=5)
+        
         tk.Label(self.panel, text="Select field:").grid(column=0, columnspan = 2, row=3, sticky = "N")
         self.listOfFields = tk.Listbox(self.panel, selectmode = tk.SINGLE, height = 20)
         self.listOfFields.grid(column=0, columnspan = 2, row=4)
@@ -161,7 +168,10 @@ class ControlPanel(tk.Frame):
         fieldName = (self.listOfFields.get(self.listOfFields.curselection()))
         pathToDir = path.join(refPath, fieldName)
         allFrames = glob(path.join(pathToDir, 'summed*'))
-        self.window.load_image(allFrames[0])
+        if allFrames:
+            self.window.load_image(allFrames[0], fieldName)
+        else:
+            self.set_message("Error: fits file does not exist",5)
 
     def set_message(self, message, seconds):
         """ Set given message for specified time """
