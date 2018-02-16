@@ -3,7 +3,7 @@
 from os import path
 from glob import glob
 from settings import *
-from wwdb import plot_curve
+from wwdb import plot_curve, find_object
 
 import pickle
 import tkinter as tk
@@ -60,7 +60,11 @@ class MainApplication(tk.Frame):
         self.controls.cutsMaxScale.config(state="normal")
         self.controls.cutsMin.set(self.imageFluxMedian)
         self.controls.cutsMax.set(self.imageFluxMedian+8*np.abs(self.imageFluxStd))
-        self.fPlot.plot_field_image(self.fieldName)
+        #plotCat = [[],[]]
+        #for star in self.database[fieldName]:
+        #    plotCat[0].append(int(star[0:4]))
+        #    plotCat[1].append(int(star[5:]))
+        self.fPlot.plot_field_image(self.fieldName)#, plotCat)
 
     def on_closing(self):
         self.root.destroy()
@@ -96,12 +100,13 @@ class FieldPlot(tk.Frame):
         # Plot instances
         self.dataPlotInstance = None
         self.titleInstance = None
+        self.mapInstance = None
         
         # Connect onclick event
         self.cid = self.canvas.mpl_connect('button_press_event', self.onclick)
 
 
-    def plot_field_image(self, fieldName):
+    def plot_field_image(self, fieldName):#, plotCat):
         self.clear_field_plot()
         self.dataPlotInstance = self.figure.imshow(self.window.fieldImage, vmin=self.window.controls.cutsMin.get(),
                                                    vmax=self.window.controls.cutsMax.get(), cmap="gray", interpolation="nearest",
@@ -122,12 +127,24 @@ class FieldPlot(tk.Frame):
     def onclick(self, event):
         xdata = event.xdata
         ydata = event.ydata
-        print(xdata, ydata)
+        #print(xdata, ydata)
         self.make_curve(self.window.fieldName, xdata, ydata)
 
     def make_curve(self, fieldName, x, y):
-        starName = '+'+str(int(x))+'+'+str(int(y))
+        #print(fieldName)
+        cat = []
+        plotCat = [[],[]]
+        for star in self.window.database[fieldName]:
+            cat.append(star)
+            plotCat[0].append(int(star[1:4]))
+            plotCat[1].append(int(star[6:]))
+
+        starName = find_object(cat, x, y)
+        #print(starName)
         plot_curve(self.window.database, fieldName, starName)
+
+    
+        
 
 
 class ControlPanel(tk.Frame):

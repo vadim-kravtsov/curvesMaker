@@ -6,6 +6,19 @@ from astropy import time
 from collections import OrderedDict
 import matplotlib.pyplot as plt
 
+def find_object(cat, x, y):
+        minDist = []
+        minDistIndex = []
+        dist = []
+        for candidate in cat:
+        	dist.append(np.hypot(int(candidate[0:4])-x, int(candidate[5:]) - y))
+        #print(np.min(dist), 'dist')
+        #print(dist)
+        minDist = min(dist)                                                             
+        minDistIndex = np.argmin(dist)                                                      
+        if minDist<5:                                                                      
+            return cat[minDistIndex]
+
 def prepare_filter(dataBase, field, star, filt):
 	dates = []
 	mags = []
@@ -56,7 +69,7 @@ def plot_curve(dataBase, field, star):
 	for dates, mags in dataList:
 		for filt in 'bvri':
 			if dates:
-				ax.plot(dates, mags, 'o', label = filt)
+				ax.plot(dates, mags, 'o', label = filt, markersize=2)
 	#handles, labels = plt.gca().get_legend_handles_labels()
 	#by_label = OrderedDict(zip(labels, handles))
 	#plt.legend(by_label.values(), by_label.keys())
