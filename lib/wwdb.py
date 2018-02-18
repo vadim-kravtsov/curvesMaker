@@ -66,13 +66,15 @@ def plot_curve(dataBase, field, star):
 			if maxVal > yMax:
 				yMax = maxVal
 	plt.ylim(yMax+1, yMin-1)
+	filts = 'bvri'
+	i = 0 
 	for dates, mags in dataList:
-		for filt in 'bvri':
-			if dates:
-				ax.plot(dates, mags, 'o', label = filt, markersize=2)
-	#handles, labels = plt.gca().get_legend_handles_labels()
-	#by_label = OrderedDict(zip(labels, handles))
-	#plt.legend(by_label.values(), by_label.keys())
+		if dates:
+			ax.plot(dates, mags, 'o', label = filts[i], markersize = 4, mew = 0.2, mec = 'black')
+		i+=1
+	handles, labels = plt.gca().get_legend_handles_labels()
+	by_label = OrderedDict(zip(labels, handles))
+	plt.legend(by_label.values(), by_label.keys())
 	#plt.savefig('outGraph/'+field+'_'+star+'.svg')
 	plt.show()
 
