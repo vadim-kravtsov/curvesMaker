@@ -112,7 +112,7 @@ class FieldPlot(tk.Frame):
                                                    vmax=self.window.controls.cutsMax.get(), cmap="gray", interpolation="nearest",
                                                    aspect="equal", origin="lower")
 
-        self.titleInstance = self.mainPlot.legend(title = fieldName, loc = 9)
+        self.titleInstance = self.mainPlot.legend(title = fieldName, loc = 9, facecolor = '#F0F0F0')
         self.canvas.show()
 
 

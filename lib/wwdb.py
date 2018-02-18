@@ -50,7 +50,7 @@ def plot_curve(dataBase, field, star):
 	rD, rM = prepare_filter(dataBase, field, star, 'rMag')
 	iD, iM = prepare_filter(dataBase, field, star, 'iMag')
 	dataList = [[bD, bM],[vD, vM],[rD, rM],[iD, iM]]
-	#plt.rcParams["figure.figsize"] = [16,9]
+	#plt.rcParams["figure.figsize"] = [9,7]
 	fig, ax = plt.subplots()
 	plt.ylabel('Magnitude, m')
 	plt.xlabel('JD')
