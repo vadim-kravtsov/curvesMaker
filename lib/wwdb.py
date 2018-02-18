@@ -54,7 +54,7 @@ def plot_curve(dataBase, field, star):
 	fig, ax = plt.subplots()
 	plt.ylabel('Magnitude, m')
 	plt.xlabel('JD')
-	plt.title('Light curve for '+field+'_'+star)
+	plt.title('Light curve for '+field+' '+star)
 	plt.grid(True)
 	yMin, yMax = 30 ,0
 	for filt in dataList:
