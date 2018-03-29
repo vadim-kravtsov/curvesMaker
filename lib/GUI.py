@@ -47,24 +47,9 @@ class MainApplication(tk.Frame):
     def load_image(self, pathToImage, fieldName):
         self.fieldImageName = pathToImage
         self.fieldName = fieldName
-        self.fieldImage = fits.getdata(pathToImage)
-        self.imageSizeY, self.imageSizeX = self.fieldImage.shape
-        self.fieldCenterX = self.imageSizeX / 2  # Let's suppose for now that the field image is centered
-        self.fieldCenterY = self.imageSizeY / 2  #
-        self.imageFluxMedian = np.median(self.fieldImage)
-        self.imageFluxStd = np.std(self.fieldImage)
-        self.controls.cutsMinScale.config(to=self.imageFluxMedian)
-        self.controls.cutsMinScale.config(state="normal")
-        self.controls.cutsMaxScale.config(from_=self.imageFluxMedian)
-        self.controls.cutsMaxScale.config(to=self.imageFluxMedian+8*self.imageFluxStd)
-        self.controls.cutsMaxScale.config(state="normal")
-        self.controls.cutsMin.set(self.imageFluxMedian)
-        self.controls.cutsMax.set(self.imageFluxMedian+8*np.abs(self.imageFluxStd))
-        #plotCat = [[],[]]
-        #for star in self.database[fieldName]:
-        #    plotCat[0].append(int(star[0:4]))
-        #    plotCat[1].append(int(star[5:]))
-        self.fPlot.plot_field_image(self.fieldName)#, plotCat)
+        self.controls.scale.set(35)
+        self.controls.power.set(3)
+        self.fPlot.plot_field_image(self.fieldName)
 
     def on_closing(self):
         self.root.destroy()
@@ -91,7 +76,7 @@ class FieldPlot(tk.Frame):
         self.mainPlot = pyplot.Figure(figsize=(7, 5), dpi=100)
         self.canvas = FigureCanvasTkAgg(self.mainPlot, master=self.window.root)
         self.figure = self.mainPlot.add_subplot(111)
-        self.canvas.show()
+        self.canvas.draw()
         self.canvas.get_tk_widget().grid(column=0, row=0, rowspan=4)
         # Hide ticks
 
@@ -108,12 +93,18 @@ class FieldPlot(tk.Frame):
 
     def plot_field_image(self, fieldName):#, plotCat):
         self.clear_field_plot()
-        self.dataPlotInstance = self.figure.imshow(self.window.fieldImage, vmin=self.window.controls.cutsMin.get(),
-                                                   vmax=self.window.controls.cutsMax.get(), cmap="gray", interpolation="nearest",
-                                                   aspect="equal", origin="lower")
-
+        k, p =  self.window.controls.scale.get(), self.window.controls.power.get()
+        f = open(path.join(refPath, fieldName,'rMap.dat'), 'r')
+        x, y, m = np.genfromtxt(f, usecols = (0,1,2), unpack = True)
+        m = 1/m*100
+        m = k*((m-min(m))/(max(m)-min(m)))**p
+        corners = (0, 0), (381, 255)
+        self.dataPlotInstance = self.figure.scatter(x,y, marker = 'o', s=m ,c='k')
+        self.figure.set_xlim(0, 381)
+        self.figure.set_ylim(0, 255)
         self.titleInstance = self.mainPlot.legend(title = fieldName, loc = 9, facecolor = '#F0F0F0')
-        self.canvas.show()
+        self.canvas.draw()
+        f.close()
 
 
     def clear_field_plot(self):
@@ -138,7 +129,6 @@ class FieldPlot(tk.Frame):
             cat.append(star)
             plotCat[0].append(int(star[1:4]))
             plotCat[1].append(int(star[6:]))
-
         starName = find_object(cat, x, y)
         #print(starName)
         plot_curve(self.window.database, fieldName, starName)
@@ -153,22 +143,22 @@ class ControlPanel(tk.Frame):
         self.panel = tk.Frame(self.window.root)
         self.panel.grid(column=1, row=0)
         # Lower cuts value scale
-        tk.Label(self.panel, text="Lower cuts: ").grid(column=0, row=0, sticky="e")
-        self.cutsMin = tk.DoubleVar()
-        self.cutsMin.set(1.0)
-        self.cutsMinScale = tk.Scale(self.panel, from_=0, to=1, orient=tk.HORIZONTAL,
-                                    showvalue = False, variable=self.cutsMin, state="disabled")
-        self.cutsMinScale.grid(column=1, row=0)
-        self.cutsMin.trace("w", lambda *args: self.window.fPlot.plot_field_image(self.window.fieldName))
+        tk.Label(self.panel, text="Scale: ").grid(column=0, row=0, sticky="e")
+        self.scale = tk.DoubleVar()
+        self.scale.set(35)
+        self.scaleScale = tk.Scale(self.panel, from_=10, to=100, orient=tk.HORIZONTAL,
+                                    showvalue = False, variable=self.scale, state="active")
+        self.scaleScale.grid(column=1, row=0)
+        self.scale.trace("w", lambda *args: self.window.fPlot.plot_field_image(self.window.fieldName))
 
         # Upper cuts value scale
-        tk.Label(self.panel, text="Upper cuts: ").grid(column=0, row=1, sticky="e")
-        self.cutsMax = tk.DoubleVar()
-        self.cutsMax.set(1.0)
-        self.cutsMaxScale = tk.Scale(self.panel, from_=0, to=1, orient=tk.HORIZONTAL,
-                                     showvalue = False,  variable=self.cutsMax, state="disabled")
-        self.cutsMaxScale.grid(column=1, row=1)
-        self.cutsMax.trace("w", lambda *args: self.window.fPlot.plot_field_image(self.window.fieldName))
+        tk.Label(self.panel, text="Power: ").grid(column=0, row=1, sticky="e")
+        self.power = tk.DoubleVar()
+        self.power.set(3)
+        self.powerScale = tk.Scale(self.panel, from_=1.0, to=6.0, orient=tk.HORIZONTAL,
+                                     showvalue = False,  variable=self.power, state="active")
+        self.powerScale.grid(column=1, row=1)
+        self.power.trace("w", lambda *args: self.window.fPlot.plot_field_image(self.window.fieldName))
 
 
         # Messages
