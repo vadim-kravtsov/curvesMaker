@@ -86,6 +86,9 @@ class FieldPlot(tk.Frame):
         self.dataPlotInstance = None
         self.titleInstance = None
         self.mapInstance = None
+        self.standartsPlotIntance = []
+        self.selectObj = None
+        self.selectObjInstance = []
         
         # Connect onclick event
         self.cid = self.canvas.mpl_connect('button_press_event', self.onclick)
@@ -93,8 +96,15 @@ class FieldPlot(tk.Frame):
 
     def plot_field_image(self, fieldName):#, plotCat):
         self.clear_field_plot()
+        filt = self.window.controls.filt.get()
         k, p =  self.window.controls.scale.get(), self.window.controls.power.get()
-        f = open(path.join(refPath, fieldName,'rMap.dat'), 'r')
+        try:
+            f = open(path.join(refPath, fieldName,'%sMap.dat'%filt), 'r')
+        except FileNotFoundError:
+            self.window.controls.set_message("Error: '%s' filter does not exist"%filt,5)
+            return
+        std = open(path.join(refPath, fieldName,'coords.dat'),'r')
+        stX, stY = np.genfromtxt(std, usecols= (1,2), unpack = True)
         x, y, m = np.genfromtxt(f, usecols = (0,1,2), unpack = True)
         m = 1/m*100
         m = k*((m-min(m))/(max(m)-min(m)))**p
@@ -103,8 +113,31 @@ class FieldPlot(tk.Frame):
         self.figure.set_xlim(0, 381)
         self.figure.set_ylim(0, 255)
         self.titleInstance = self.mainPlot.legend(title = fieldName, loc = 9, facecolor = '#F0F0F0')
+        cat = []
+        for star in self.window.database[fieldName]:
+            cat.append(star)
+        for i in range(len(stX)):
+            if i == 0:
+                starName = find_object(cat, int(stX[i]), int(stY[i]))
+                x, y = int(starName[:4]), int(starName[4:])
+                self.standartsPlotIntance.append(self.figure.plot(x, y,
+                                                marker="o", markerfacecolor="none",
+                                                linestyle="", markersize=10, markeredgewidth=2,
+                                                markeredgecolor='red')[0])
+            else:
+                starName = find_object(cat, int(stX[i]), int(stY[i]))
+                x, y = int(starName[:4]), int(starName[4:])
+                self.standartsPlotIntance.append(self.figure.plot(x, y,
+                                                marker="o", markerfacecolor="none",
+                                                linestyle="", markersize=10, markeredgewidth=2,
+                                                markeredgecolor='green')[0])
+        if self.selectObj:
+            self.selectObjInstance.append(self.figure.plot(int(self.selectObj.get()[:4]), int(self.selectObj.get()[4:]),
+                                                marker="+", markersize=10, color = 'red')[0])
+            self.selectObj = None
         self.canvas.draw()
         f.close()
+        std.close()
 
 
     def clear_field_plot(self):
@@ -113,6 +146,12 @@ class FieldPlot(tk.Frame):
             self.dataPlotInstance = None
             self.titleInstance.remove()
             self.titleInstance = None
+            while self.standartsPlotIntance:
+                self.standartsPlotIntance.pop().remove()
+            if self.selectObjInstance:
+                self.selectObjInstance.pop().remove()
+            
+           
 
             
     def onclick(self, event):
@@ -131,6 +170,9 @@ class FieldPlot(tk.Frame):
             plotCat[1].append(int(star[6:]))
         starName = find_object(cat, x, y)
         #print(starName)
+        self.selectObj = tk.StringVar()
+        self.selectObj.trace("w", lambda *args: self.plot_field_image(self.window.fieldName))
+        self.selectObj.set(starName)
         plot_curve(self.window.database, fieldName, starName)
 
     
@@ -148,7 +190,7 @@ class ControlPanel(tk.Frame):
         self.scale.set(35)
         self.scaleScale = tk.Scale(self.panel, from_=10, to=100, orient=tk.HORIZONTAL,
                                     showvalue = False, variable=self.scale, state="active")
-        self.scaleScale.grid(column=1, row=0)
+        self.scaleScale.grid(column=1, row=0, columnspan = 3)
         self.scale.trace("w", lambda *args: self.window.fPlot.plot_field_image(self.window.fieldName))
 
         # Upper cuts value scale
@@ -157,28 +199,38 @@ class ControlPanel(tk.Frame):
         self.power.set(3)
         self.powerScale = tk.Scale(self.panel, from_=1.0, to=6.0, orient=tk.HORIZONTAL,
                                      showvalue = False,  variable=self.power, state="active")
-        self.powerScale.grid(column=1, row=1)
+        self.powerScale.grid(column=1, row=1, columnspan = 3)
         self.power.trace("w", lambda *args: self.window.fPlot.plot_field_image(self.window.fieldName))
 
 
         # Messages
         self.messagesLabelValue = tk.StringVar()
         self.messagesLabelValue.set("")
-        tk.Label(self.panel, textvariable=self.messagesLabelValue).grid(column=0, columnspan = 2, row=5)
+        tk.Label(self.panel, textvariable=self.messagesLabelValue).grid(column=0, columnspan = 4, row=7)
         
-        tk.Label(self.panel, text="Select field:").grid(column=0, columnspan = 2, row=3, sticky = "N")
-        self.listOfFields = tk.Listbox(self.panel, selectmode = tk.SINGLE, height = 20)
-        self.listOfFields.grid(column=0, columnspan = 2, row=4)
+        tk.Label(self.panel, text="Select field:").grid(column=0, columnspan = 4, row=3, sticky = "N")
+        self.listOfFields = tk.Listbox(self.panel, selectmode = tk.SINGLE, height = 15)
+        self.listOfFields.grid(column=0, columnspan = 4, row=4)
         self.listOfFields.bind('<<ListboxSelect>>', self.select_item)
+
+        tk.Label(self.panel, text="Filters:").grid(column=0, columnspan = 4, row=5, sticky = "N")
+        self.filt = tk.StringVar()
+        self.filt.set('r')
+        self.filterB = tk.Radiobutton(self.panel, text = 'b', variable = self.filt, value = 'b', compound = 'top').grid(column = 0, row =6)
+        self.filterV = tk.Radiobutton(self.panel, text = 'v', variable = self.filt, value = 'v', compound = 'top').grid(column = 1, row =6)
+        self.filterR = tk.Radiobutton(self.panel, text = 'r', variable = self.filt, value = 'r', compound = 'top').grid(column = 2, row =6)
+        self.filterI = tk.Radiobutton(self.panel, text = 'i', variable = self.filt, value = 'i', compound = 'top').grid(column = 3, row =6)
+        self.filt.trace("w", lambda *args: self.window.fPlot.plot_field_image(self.window.fieldName))
+
     
     def select_item(self, event):
         fieldName = (self.listOfFields.get(self.listOfFields.curselection()))
         pathToDir = path.join(refPath, fieldName)
-        allFrames = glob(path.join(pathToDir, 'summed*'))
+        allFrames = glob(path.join(pathToDir, '*Map.dat'))
         if allFrames:
             self.window.load_image(allFrames[0], fieldName)
         else:
-            self.set_message("Error: fits file does not exist",5)
+            self.set_message("Error: map file does not exist",5)
 
     def set_message(self, message, seconds):
         """ Set given message for specified time """
@@ -195,7 +247,7 @@ class ControlPanel(tk.Frame):
         fList.sort()
         for field in fList:
             self.listOfFields.insert(tk.END, field)
-        self.listOfFields.grid(column=0, columnspan = 2, row=4)
+        self.listOfFields.grid(column=0, columnspan = 4, row=4)
 
 
     
